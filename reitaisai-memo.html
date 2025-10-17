@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>例大祭メモ — メモページ</title>
+<link rel="icon" href="data:,">
+<style>
+  :root{
+    --main:#8a1d24; /* メインバー色（画像参考） */
+    --accent:#f8f6f6;
+    --muted:#7a7a7a;
+    --card-radius:12px;
+    --shadow: 0 6px 18px rgba(0,0,0,0.08);
+    --glass: rgba(255,255,255,0.8);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    background: #fff;
+    color:#222;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* Header */
+  header{
+    background:var(--main);
+    color:white;
+    padding:14px 18px;
+    text-align:center;
+    position:sticky;
+    top:0;
+    z-index:10;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  }
+  header .title{
+    display:inline-block;
+    background:rgba(255,255,255,0.06);
+    padding:6px 14px;
+    border-radius:18px;
+    font-weight:700;
+    letter-spacing:0.6px;
+  }
+
+  /* Container */
+  .container{
+    max-width:920px;
+    margin:18px auto;
+    width:calc(100% - 32px);
+    display:flex;
+    gap:18px;
+  }
+
+  /* Left: editor & controls */
+  .panel{
+    flex:1 1 360px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .card{
+    background:var(--accent);
+    border-radius:var(--card-radius);
+    padding:12px;
+    box-shadow:var(--shadow);
+  }
+
+  /* Add form */
+  .add-form{
+    display:grid;
+    grid-template-columns: 1fr 120px;
+    gap:8px;
+    align-items:end;
+  }
+  .add-form .col {
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .add-form input, .add-form textarea{
+    padding:8px 10px;
+    border:1px solid #eee;
+    border-radius:8px;
+    font-size:14px;
+    background:white;
+  }
+  .add-form input[type="number"]{ width:100%; }
+  .add-form textarea{ resize:vertical; min-height:48px; max-height:120px; }
+
+  .controls{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  button{
+    background:var(--main);
+    color:white;
+    border:none;
+    padding:8px 12px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:700;
+  }
+  button.secondary{
+    background:#eee;
+    color:#333;
+    font-weight:600;
+  }
+  .hint{ font-size:13px; color:var(--muted); }
+
+  /* Right: list */
+  .list-panel{
+    flex:1 1 360px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .items{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    min-height:200px;
+  }
+  .item{
+    background:white;
+    border:1px solid #f0f0f0;
+    border-radius:12px;
+    padding:10px;
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+  }
+  .drag-handle{
+    width:28px;
+    height:28px;
+    border-radius:8px;
+    background:linear-gradient(180deg,#f3f3f3,#efefef);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    color:#888;
+    cursor:grab;
+    user-select:none;
+  }
+  .item-main{ flex:1; display:flex; flex-direction:column; gap:6px; }
+  .item-title{ font-weight:800; font-size:15px; }
+  .item-meta{ display:flex; gap:12px; align-items:center; font-size:13px; color:var(--muted); }
+  .item-meta b{ color:#222; font-weight:700;}
+  .item-note{ font-size:13px; color:#444; background:#fafafa; padding:8px; border-radius:8px; }
+  .item-actions{ display:flex; gap:8px; align-items:center; margin-left:auto; }
+  .pill{
+    padding:6px 8px;
+    border-radius:8px;
+    background:#f7f7f7;
+    font-size:13px;
+  }
+  .price{
+    font-weight:800;
+    color:var(--main);
+  }
+
+  /* footer bar with total */
+  .bottom-bar{
+    position:sticky;
+    bottom:12px;
+    margin:0 auto;
+    max-width:920px;
+    width:calc(100% - 32px);
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:center;
+    z-index:9;
+  }
+  .total-card{
+    background:var(--main);
+    color:white;
+    padding:14px 18px;
+    border-radius:16px;
+    box-shadow:var(--shadow);
+    font-weight:800;
+    display:flex;
+    gap:18px;
+    align-items:center;
+  }
+  .secondary-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+
+  /* small screens */
+  @media (max-width:900px){
+    .container{ flex-direction:column; width:calc(100% - 24px); margin-top:10px; }
+    .panel, .list-panel{ width:100%; }
+    .add-form{ grid-template-columns: 1fr; }
+    .bottom-bar{ flex-direction:column-reverse; align-items:stretch; }
+  }
+
+  /* tiny style niceties */
+  .ghost{
+    opacity:0.4;
+  }
+  .empty{
+    text-align:center;
+    color:var(--muted);
+    padding:32px;
+    border-radius:12px;
+    border:2px dashed #f0f0f0;
+    background:linear-gradient(180deg,#fff,#fbfbfb);
+  }
+  input:focus, textarea:focus { outline:2px solid rgba(138,29,36,0.12); }
+  .sr-only{ position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden; }
+</style>
+</head>
+<body>
+  <header>
+    <span class="title">第十二回博麗神社秋季例大祭　買い物リスト</span>
+  </header>
+
+  <main style="flex:1;">
+    <div class="container">
+      <!-- 左：追加フォーム -->
+      <section class="panel">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-weight:800">新しいメモを追加</div>
+              <div class="hint">サークル名・スペース・価格を入れて「追加」してね</div>
+            </div>
+            <div>
+              <button id="clearAll" class="secondary">全部消す</button>
+            </div>
+          </div>
+
+          <form id="addForm" style="margin-top:12px;">
+            <div class="add-form">
+              <div class="col">
+                <input id="inputName" type="text" placeholder="サークル名（例：紅茶館）" required />
+                <input id="inputSpace" type="text" placeholder="スペース番号（例：A-15b）" />
+                <textarea id="inputNote" placeholder="メモ（例：特典ペーパーがあるか確認）"></textarea>
+              </div>
+
+              <div style="display:flex;flex-direction:column; gap:8px;">
+                <input id="inputPrice" type="number" min="0" step="1" placeholder="価格（円）" />
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <button type="submit">＋ 追加</button>
+                  <button type="button" id="importBtn" class="secondary">インポート</button>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <div style="margin-top:10px;font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;">
+            <div class="pill">ドラッグで順番を変更</div>
+            <div class="pill">ローカル保存（ブラウザ）</div>
+            <div class="pill">エクスポートでバックアップ</div>
+          </div>
+        </div>
+
+        <!-- Export area -->
+        <div class="card">
+          <div style="font-weight:800;margin-bottom:8px;">バックアップ / 復元</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button id="exportBtn" class="secondary">エクスポート（JSON）</button>
+            <input id="importFile" type="file" accept="application/json" style="display:none" />
+            <button id="clearStorage" class="secondary">保存データを削除</button>
+          </div>
+          <div style="margin-top:8px;font-size:13px;color:var(--muted);">
+            ※ インポートはエクスポートしたJSONを使ってください。
+          </div>
+        </div>
+
+        <div class="card" style="display:flex;gap:8px;flex-direction:column;">
+          <div style="font-weight:800">使い方メモ</div>
+          <ol style="margin:6px 0 0 18px;color:var(--muted);">
+            <li>サークル名・スペース・価格を入力して追加</li>
+            <li>ドラッグして回る順を作る</li>
+            <li>完了後はエクスポートで保存</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 右：リスト -->
+      <aside class="list-panel">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-weight:800">買い物リスト</div>
+            <div class="hint">一覧をドラッグで並べ替え</div>
+          </div>
+
+          <div class="items" id="items"></div>
+
+          <div id="emptyMsg" class="empty" style="display:none;margin-top:10px;">
+            リストが空です。上のフォームで追加してね！
+          </div>
+        </div>
+
+        <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:800">合計</div>
+            <div class="hint">選択したサークルの合計金額</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:22px;font-weight:900;color:var(--main);" id="total">¥0</div>
+            <div class="hint">持ち金や交通費は追加してください</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Bottom bar -->
+  <div class="bottom-bar" style="pointer-events:auto;">
+    <div class="total-card">
+      <div>合計</div>
+      <div id="stickyTotal" style="font-size:18px;">¥0</div>
+    </div>
+    <div class="secondary-actions">
+      <button id="exportBtn2" class="secondary">エクスポート</button>
+      <button id="helpToggle" class="secondary">ヘルプ</button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // storage key
+  const KEY = "reitaisai_memo_v1";
+  // elements
+  const form = document.getElementById("addForm");
+  const inputName = document.getElementById("inputName");
+  const inputSpace = document.getElementById("inputSpace");
+  const inputPrice = document.getElementById("inputPrice");
+  const inputNote = document.getElementById("inputNote");
+  const itemsEl = document.getElementById("items");
+  const totalEl = document.getElementById("total");
+  const stickyTotal = document.getElementById("stickyTotal");
+  const emptyMsg = document.getElementById("emptyMsg");
+  const exportBtn = document.getElementById("exportBtn");
+  const exportBtn2 = document.getElementById("exportBtn2");
+  const importBtn = document.getElementById("importBtn");
+  const importFile = document.getElementById("importFile");
+  const clearAllBtn = document.getElementById("clearAll");
+  const clearStorageBtn = document.getElementById("clearStorage");
+
+  let items = [];
+
+  // --- helpers ---
+  function save(){
+    localStorage.setItem(KEY, JSON.stringify(items));
+  }
+  function load(){
+    try{
+      const raw = localStorage.getItem(KEY);
+      if(!raw) return;
+      items = JSON.parse(raw) || [];
+    }catch(e){
+      console.error(e);
+      items = [];
+    }
+  }
+  function formatYen(n){
+    if(!n && n !== 0) return "¥0";
+    return "¥" + Number(n || 0).toLocaleString();
+  }
+  function calcTotal(){
+    const t = items.reduce((s,it) => s + (Number(it.price) || 0), 0);
+    totalEl.textContent = formatYen(t);
+    stickyTotal.textContent = formatYen(t);
+  }
+
+  // --- render ---
+  function render(){
+    itemsEl.innerHTML = "";
+    if(items.length === 0){
+      emptyMsg.style.display = "block";
+    } else {
+      emptyMsg.style.display = "none";
+    }
+    items.forEach((it, idx) => {
+      const div = document.createElement("div");
+      div.className = "item";
+      div.draggable = true;
+      div.dataset.index = idx;
+
+      // drag handle
+      const drag = document.createElement("div");
+      drag.className = "drag-handle";
+      drag.title = "ドラッグで順番を変更";
+      drag.textContent = "≡";
+
+      // main
+      const main = document.createElement("div");
+      main.className = "item-main";
+      // title (editable)
+      const title = document.createElement("input");
+      title.type = "text";
+      title.value = it.name || "";
+      title.className = "item-title";
+      title.style.fontWeight = "800";
+      title.style.border = "none";
+      title.style.padding = "0";
+      title.style.fontSize = "15px";
+      title.style.background = "transparent";
+      title.addEventListener("change", (e) => {
+        items[idx].name = e.target.value;
+        save();
+        render();
+      });
+
+      // meta row
+      const meta = document.createElement("div");
+      meta.className = "item-meta";
+      const space = document.createElement("div");
+      space.innerHTML = "<b>スペース</b> " + (it.space || "—");
+      const price = document.createElement("div");
+      price.innerHTML = "<b>価格</b> <span class='price'>" + formatYen(it.price) + "</span>";
+      meta.append(space, price);
+
+      // note (editable)
+      const note = document.createElement("textarea");
+      note.className = "item-note";
+      note.value = it.note || "";
+      note.addEventListener("change", (e) => {
+        items[idx].note = e.target.value;
+        save();
+      });
+
+      main.appendChild(title);
+      main.appendChild(meta);
+      main.appendChild(note);
+
+      // actions
+      const actions = document.createElement("div");
+      actions.className = "item-actions";
+
+      // price edit
+      const priceInput = document.createElement("input");
+      priceInput.type = "number";
+      priceInput.value = Number(it.price) || "";
+      priceInput.style.width = "86px";
+      priceInput.style.padding = "6px";
+      priceInput.style.borderRadius = "8px";
+      priceInput.addEventListener("change", (e) => {
+        items[idx].price = Number(e.target.value) || 0;
+        save();
+        calcTotal();
+        render();
+      });
+
+      const del = document.createElement("button");
+      del.className = "secondary";
+      del.textContent = "削除";
+      del.addEventListener("click", () => {
+        if(!confirm("このメモを削除しますか？")) return;
+        items.splice(idx,1);
+        save();
+        render();
+        calcTotal();
+      });
+
+      actions.append(priceInput, del);
+
+      div.append(drag, main, actions);
+      itemsEl.appendChild(div);
+
+      // Drag & Drop events
+      div.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("text/plain", idx.toString());
+        div.classList.add("ghost");
+      });
+      div.addEventListener("dragend", () => {
+        div.classList.remove("ghost");
+      });
+      div.addEventListener("dragover", (e) => {
+        e.preventDefault();
+      });
+      div.addEventListener("drop", (e) => {
+        e.preventDefault();
+        const from = Number(e.dataTransfer.getData("text/plain"));
+        const to = Number(div.dataset.index);
+        if(isNaN(from) || isNaN(to)) return;
+        // reorder
+        const item = items.splice(from,1)[0];
+        items.splice(to, 0, item);
+        save();
+        render();
+        calcTotal();
+      });
+    });
+    calcTotal();
+  }
+
+  // --- form submit ---
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = inputName.value.trim();
+    if(!name){
+      alert("サークル名を入れてね！");
+      return;
+    }
+    const space = inputSpace.value.trim();
+    const price = Number(inputPrice.value || 0);
+    const note = inputNote.value.trim();
+
+    items.push({ name, space, price, note, created: Date.now() });
+    save();
+    render();
+    form.reset();
+    inputName.focus();
+  });
+
+  // --- export / import ---
+  function doExport(){
+    const blob = new Blob([JSON.stringify(items, null, 2)], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "reitaisai_memo_export.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  exportBtn.addEventListener("click", doExport);
+  exportBtn2.addEventListener("click", doExport);
+
+  importBtn.addEventListener("click", () => importFile.click());
+  importFile.addEventListener("change", async (ev) => {
+    const f = ev.target.files && ev.target.files[0];
+    if(!f) return;
+    try{
+      const txt = await f.text();
+      const parsed = JSON.parse(txt);
+      if(!Array.isArray(parsed)) throw new Error("フォーマット不正");
+      if(!confirm("インポートすると現在の保存データを上書きします。よろしいですか？")) return;
+      items = parsed;
+      save();
+      render();
+      calcTotal();
+      importFile.value = "";
+    }catch(err){
+      alert("読み込み失敗: " + (err.message || err));
+      console.error(err);
+    }
+  });
+
+  // clear all or storage
+  clearAllBtn.addEventListener("click", () => {
+    if(!confirm("リストの全項目を削除しますか？")) return;
+    items = [];
+    save();
+    render();
+    calcTotal();
+  });
+  clearStorageBtn.addEventListener("click", () => {
+    if(!confirm("保存データ（localStorage）を完全に削除しますか？")) return;
+    localStorage.removeItem(KEY);
+    items = [];
+    render();
+    calcTotal();
+  });
+
+  // initial load
+  load();
+  render();
+  calcTotal();
+
+  // keyboard shortcut: n to focus name
+  window.addEventListener("keydown", (e) => {
+    if(e.key === "n" && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "TEXTAREA"){
+      inputName.focus();
+      e.preventDefault();
+    }
+  });
+
+  // touch-friendly: long-press to pick up? (fallback: use drag handle)
+  // nothing extra required; native touch drag should work on many browsers
+})();
+</script>
+</body>
+</html>
